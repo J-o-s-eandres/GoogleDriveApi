@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📁 Google Drive Manager</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Tu CSS personalizado - CORREGIDO CON FLASK -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <style>
+        :root {
+            --primary-color: #4e54c8;
+            --secondary-color: #8f94fb;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --info-color: #3b82f6;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s, box-shadow 0.3s;
+            margin-bottom: 1.5rem;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
+        }
+        
+        /* ... el resto de tus estilos inline igual que antes ... */
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container">
+            <a class="navbar-brand nav-brand" href="#">
+                <i class="bi bi-google-drive me-2"></i>Drive Manager
+            </a>
+            
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <span class="status-indicator status-online"></span>
+                    <span class="text-muted small" id="connectionStatus">Conectando...</span>
+                </div>
+                <button class="btn btn-outline-primary btn-sm" onclick="toggleTheme()">
+                    <i class="bi bi-moon-fill"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Resto del contenido HTML igual que antes -->
+    <!-- Main Content -->
+    <div class="container-fluid">
+        <div class="hero-section">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <h1 class="display-5 fw-bold mb-3">Gestión de Permisos de Google Drive</h1>
+                        <p class="lead text-muted mb-4">
+                            Administra los permisos de tus archivos de Google Drive de forma sencilla y visual.
+                            Otorga, modifica o elimina acceso con solo unos clics.
+                        </p>
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="badge bg-primary bg-gradient p-2"><i class="bi bi-eye me-1"></i> Ver permisos</span>
+                            <span class="badge bg-success bg-gradient p-2"><i class="bi bi-person-plus me-1"></i> Otorgar acceso</span>
+                            <span class="badge bg-danger bg-gradient p-2"><i class="bi bi-person-x me-1"></i> Eliminar acceso</span>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 text-center d-none d-lg-block">
+                        <i class="bi bi-google-drive display-1 text-primary opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <!-- Toast para mensajes -->
+            <div class="toast-container position-fixed top-0 end-0 p-3">
+                <div id="liveToast" class="toast custom-toast" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="toast-header">
+                        <i class="bi bi-info-circle me-2 text-primary"></i>
+                        <strong class="me-auto">Notificación</strong>
+                        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                    <div class="toast-body" id="toastMessage">
+                        Mensaje aquí
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Overlay -->
+            <div id="loadingOverlay" class="position-fixed top-0 start-0 w-100 h-100 d-none" style="background: rgba(255,255,255,0.8); z-index: 1050;">
+                <div class="d-flex justify-content-center align-items-center h-100">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <p class="mt-3 text-muted" id="loadingText">Procesando...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <!-- Panel izquierdo: Ver permisos y gestión -->
+                <div class="col-lg-8">
+                    <!-- Card: Ver permisos -->
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-search me-2"></i>Ver Permisos del Archivo
+                            </div>
+                            <span class="badge bg-info" id="permissionsCount">0 permisos</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-4">
+                                <div class="col-md-8">
+                                    <label for="fileId" class="form-label">ID del Archivo de Google Drive</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-file-earmark"></i></span>
+                                        <input type="text" class="form-control" id="fileId" 
+                                               placeholder="Ej: 1MBbESCRgAS3WYPZfbyyyY46e6da6dgf5"
+                                               value="1MBbESCRgAS3WYPZfbyyyY46e6da6dgf5">
+                                    </div>
+                                    <div class="form-text">Pega el ID del archivo de Google Drive que quieres gestionar</div>
+                                </div>
+                                <div class="col-md-4 d-flex align-items-end">
+                                    <div class="d-grid gap-2 w-100">
+                                        <button class="btn btn-primary action-btn" onclick="getPermissions()">
+                                            <i class="bi bi-eye me-2"></i>Ver Permisos
+                                        </button>
+                                        <button class="btn btn-outline-secondary" onclick="getFileInfo()">
+                                            <i class="bi bi-info-circle me-2"></i>Info del Archivo
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Información del archivo -->
+                            <div class="alert alert-light border d-none" id="fileInfoCard">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1" id="fileName">Nombre del archivo</h6>
+                                        <p class="mb-1 small text-muted" id="fileDetails">Detalles...</p>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="hideFileInfo()">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Lista de permisos -->
+                            <div id="permissionsContainer">
+                                <div class="empty-state" id="emptyState">
+                                    <i class="bi bi-people"></i>
+                                    <h5 class="text-muted">No hay permisos para mostrar</h5>
+                                    <p class="text-muted small">Ingresa un ID de archivo y haz clic en "Ver Permisos"</p>
+                                </div>
+                                
+                                <div class="table-responsive d-none" id="permissionsTable">
+                                    <table class="table table-permissions table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Usuario</th>
+                                                <th>Tipo</th>
+                                                <th>Rol</th>
+                                                <th>ID del Permiso</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="permissionsList">
+                                            <!-- Las filas se insertan aquí con JavaScript -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card: Eliminar permiso -->
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="bi bi-person-x me-2"></i>Eliminar Permiso
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="deleteValue" class="form-label" id="deleteLabel">Email del usuario</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                                        <input type="text" class="form-control" id="deleteValue" 
+                                               placeholder="usuario@gmail.com">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="deleteType" class="form-label">Tipo de eliminación</label>
+                                    <select class="form-select" id="deleteType" onchange="toggleDeleteInput()">
+                                        <option value="email">Por Email</option>
+                                        <option value="id">Por ID del Permiso</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button class="btn btn-danger action-btn w-100" onclick="deletePermission()">
+                                        <i class="bi bi-trash me-2"></i>Eliminar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel derecho: Otorgar permiso -->
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="bi bi-person-plus me-2"></i>Otorgar Nuevo Permiso
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="grantFileId" class="form-label">ID del Archivo</label>
+                                <input type="text" class="form-control" id="grantFileId" 
+                                       placeholder="ID del archivo (opcional)"
+                                       value="1MBbESCRgAS3WYPZfbyyyY46e6da6dgf5">
+                                <div class="form-text">Deja vacío para usar el mismo archivo de arriba</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="permType" class="form-label">Tipo de Permiso</label>
+                                <select class="form-select" id="permType">
+                                    <option value="user">Usuario Individual</option>
+                                    <option value="group">Grupo de Google</option>
+                                    <option value="domain">Dominio Completo</option>
+                                    <option value="anyone">Cualquiera con el Link</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="permValue" class="form-label" id="valueLabel">Email del Usuario</label>
+                                <input type="text" class="form-control" id="permValue" 
+                                       placeholder="usuario@gmail.com">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="permRole" class="form-label">Rol del Permiso</label>
+                                <select class="form-select" id="permRole">
+                                    <option value="reader">Lector (Solo lectura)</option>
+                                    <option value="writer">Editor (Puede modificar)</option>
+                                    <option value="commentor">Comentarista (Puede comentar)</option>
+                                    <option value="owner">Propietario (Acceso completo)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button class="btn btn-success action-btn" onclick="grantPermission()">
+                                    <i class="bi bi-check-circle me-2"></i>Otorgar Permiso
+                                </button>
+                            </div>
+                            
+                            <div class="mt-4">
+                                <h6 class="border-bottom pb-2">Roles disponibles:</h6>
+                                <div class="row g-2 mt-2">
+                                    <div class="col-6">
+                                        <div class="p-2 border rounded text-center">
+                                            <div class="badge-reader permission-badge">Lector</div>
+                                            <p class="small text-muted mb-0 mt-1">Solo lectura</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="p-2 border rounded text-center">
+                                            <div class="badge-writer permission-badge">Editor</div>
+                                            <p class="small text-muted mb-0 mt-1">Puede editar</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="p-2 border rounded text-center">
+                                            <div class="badge-commentor permission-badge">Comentarista</div>
+                                            <p class="small text-muted mb-0 mt-1">Puede comentar</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="p-2 border rounded text-center">
+                                            <div class="badge-owner permission-badge">Propietario</div>
+                                            <p class="small text-muted mb-0 mt-1">Acceso total</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-5 py-4 border-top">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="mb-3">Google Drive Manager</h6>
+                    <p class="text-muted small">
+                        Herramienta para gestionar permisos de archivos de Google Drive.
+                        Desarrollado con Flask y PyDrive2.
+                    </p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="text-muted small mb-0">
+                        <i class="bi bi-code-slash me-1"></i> Desarrollado por ti
+                        <br>
+                        <span id="currentYear">© 2024</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Inicializar toast
+        const toastEl = document.getElementById('liveToast');
+        const toast = new bootstrap.Toast(toastEl, { delay: 5000 });
+        
+        // Variables globales
+        let currentFileId = '';
+        let currentPermissions = [];
+        
+        // Actualizar año en el footer
+        document.getElementById('currentYear').textContent = `© ${new Date().getFullYear()}`;
+        
+        // Mostrar toast de mensaje
+        function showToast(message, type = 'info') {
+            const toastMessage = document.getElementById('toastMessage');
+            const toastHeader = toastEl.querySelector('.toast-header');
+            const icon = toastHeader.querySelector('i');
+            
+            toastMessage.textContent = message;
+            
+            // Cambiar color según tipo
+            icon.className = `bi me-2`;
+            switch(type) {
+                case 'success':
+                    icon.className += ' bi-check-circle-fill text-success';
+                    break;
+                case 'error':
+                    icon.className += ' bi-x-circle-fill text-danger';
+                    break;
+                case 'warning':
+                    icon.className += ' bi-exclamation-triangle-fill text-warning';
+                    break;
+                default:
+                    icon.className += ' bi-info-circle-fill text-primary';
+            }
+            
+            toast.show();
+        }
+        
+        // Mostrar/ocultar loading
+        function showLoading(text = 'Procesando...') {
+            document.getElementById('loadingText').textContent = text;
+            document.getElementById('loadingOverlay').classList.remove('d-none');
+        }
+        
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.add('d-none');
+        }
+        
+        // Toggle tema oscuro/claro
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-bs-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-bs-theme', newTheme);
+            
+            // Guardar preferencia
+            localStorage.setItem('theme', newTheme);
+            
+            // Cambiar ícono
+            const icon = document.querySelector('[onclick="toggleTheme()"] i');
+            icon.className = newTheme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+            
+            showToast(`Tema ${newTheme === 'dark' ? 'oscuro' : 'claro'} activado`);
+        }
+        
+        // Verificar estado de conexión - CORREGIDO
+        async function checkConnection() {
+            try {
+                const response = await fetch('/api/status');  // ¡CORREGIDO!
+                const data = await response.json();
+                
+                const statusEl = document.getElementById('connectionStatus');
+                
+                if (data.credentials_exist) {
+                    statusEl.innerHTML = '<span class="status-indicator status-online"></span> Conectado';
+                    statusEl.className = 'small';
+                } else {
+                    statusEl.innerHTML = '<span class="status-indicator status-offline"></span> Sin credenciales';
+                    statusEl.className = 'small text-danger';
+                    showToast('⚠️ No se encontraron credenciales. Ejecuta primero la autenticación.', 'warning');
+                }
+            } catch (error) {
+                document.getElementById('connectionStatus').innerHTML = 
+                    '<span class="status-indicator status-offline"></span> Error de conexión';
+                console.error('Error conectando a la API:', error);
+            }
+        }
+
+        // Llamar al verificar conexión al cargar la página
+        async function getPermissions() {
+            let fileId = document.getElementById('fileId').value.trim();
+            
+            if (!fileId) {
+                showToast('Por favor ingresa un ID de archivo', 'error');
+                return;
+            }
+            
+            currentFileId = fileId;
+            showLoading('Obteniendo permisos...');
+            
+            try {
+                console.log('📡 Iniciando solicitud de permisos...');
+                
+                // IMPORTANTE: Usar URL correcta según dispositivo
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                let apiUrl;
+                
+                if (isMobile) {
+                    // En móvil, usa IP completa
+                    const currentUrl = window.location.href;
+                    const baseUrl = currentUrl.split('/').slice(0, 3).join('/'); // Ej: http://192.168.1.8:5000
+                    apiUrl = `${baseUrl}/api/permissions/${fileId}`;
+                } else {
+                    // En desktop, usa ruta relativa
+                    apiUrl = `/api/permissions/${fileId}`;
+                }
+                
+                console.log(`📡 URL de API: ${apiUrl}`);
+                console.log(`📄 ID Archivo: ${fileId}`);
+                
+                const response = await fetch(apiUrl);
+                console.log(`📊 Status: ${response.status} ${response.statusText}`);
+                console.log(`📋 Content-Type: ${response.headers.get('content-type')}`);
+                
+                // Verificar respuesta
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('✅ Datos recibidos:', data);
+                
+                if (data.error) {
+                    showToast('Error: ' + data.error, 'error');
+                    hideLoading();
+                    return;
+                }
+                
+                if (!data.success) {
+                    showToast('Error inesperado en la respuesta', 'error');
+                    hideLoading();
+                    return;
+                }
+                
+                // Actualizar contador
+                document.getElementById('permissionsCount').textContent = `${data.count} permisos`;
+                
+                // Mostrar información del archivo
+                document.getElementById('fileName').textContent = data.file_title;
+                document.getElementById('fileDetails').textContent = `ID: ${data.file_id} • ${data.count} permisos`;
+                document.getElementById('fileInfoCard').classList.remove('d-none');
+                
+                // Mostrar tabla de permisos
+                currentPermissions = data.permissions || [];
+                
+                if (currentPermissions.length > 0) {
+                    renderPermissionsTable(currentPermissions);
+                    document.getElementById('emptyState').classList.add('d-none');
+                    document.getElementById('permissionsTable').classList.remove('d-none');
+                } else {
+                    document.getElementById('emptyState').classList.remove('d-none');
+                    document.getElementById('permissionsTable').classList.add('d-none');
+                }
+                
+                showToast(`✅ Se encontraron ${data.count} permisos`, 'success');
+                
+            } catch (error) {
+                console.error('❌ Error completo:', error);
+                showToast('Error al obtener permisos: ' + error.message, 'error');
+                
+                // Mostrar sugerencias según el error
+                if (error.message.includes('Failed to fetch')) {
+                    console.error('🔌 Error de conexión. Verifica:');
+                    console.error('   1. El servidor Flask está corriendo');
+                    console.error('   2. La IP es correcta (192.168.1.8)');
+                    console.error('   3. El firewall permite conexiones');
+                }
+                
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Nueva función para renderizar la tabla
+        function renderPermissionsTable(permissions) {
+            const tbody = document.getElementById('permissionsList');
+            tbody.innerHTML = '';
+            
+            console.log(`🎨 Renderizando ${permissions.length} permisos...`);
+            
+            permissions.forEach((perm, index) => {
+                const row = document.createElement('tr');
+                row.className = 'fade-in';
+                
+                // Determinar badge según rol
+                let badgeClass = 'badge-reader';
+                switch(perm.role) {
+                    case 'writer': badgeClass = 'badge-writer'; break;
+                    case 'owner': badgeClass = 'badge-owner'; break;
+                    case 'commentor': badgeClass = 'badge-commentor'; break;
+                }
+                
+                // Avatar iniciales
+                let initials = '?';
+                if (perm.name) {
+                    initials = perm.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+                } else if (perm.email) {
+                    initials = perm.email.substring(0, 2).toUpperCase();
+                }
+                
+                row.innerHTML = `
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="user-avatar me-3">${initials}</div>
+                            <div>
+                                <div class="fw-medium">${perm.name || perm.email || 'Sin nombre'}</div>
+                                <div class="small text-muted">${perm.email || perm.domain || perm.type}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border">${perm.type}</span>
+                    </td>
+                    <td>
+                        <span class="${badgeClass} permission-badge">${perm.role}</span>
+                    </td>
+                    <td>
+                        <code class="small" title="${perm.id}">${perm.id.substring(0, 8)}...</code>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deletePermissionById('${perm.id}')" title="Eliminar permiso">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+            
+            console.log('✅ Tabla renderizada correctamente');
+        }
+        
+        // Obtener información del archivo - CORREGIDO
+        async function getFileInfo() {
+            const fileId = document.getElementById('fileId').value.trim();
+            
+            if (!fileId) {
+                showToast('Por favor ingresa un ID de archivo', 'error');
+                return;
+            }
+            
+            showLoading('Obteniendo información...');
+            
+            try {
+                const response = await fetch(`/api/file/${fileId}`);  // ¡Ya está correcto!
+                // ... resto del código igual ...
+            } catch (error) {
+                showToast('Error al obtener información: ' + error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // Otorgar permiso - CORREGIDO
+        async function grantPermission() {
+            let fileId = document.getElementById('grantFileId').value.trim();
+            
+            // Si no se especifica, usar el mismo de arriba
+            if (!fileId && currentFileId) {
+                fileId = currentFileId;
+            } else if (!fileId) {
+                showToast('Por favor ingresa un ID de archivo', 'error');
+                return;
+            }
+            
+            const type = document.getElementById('permType').value;
+            const value = document.getElementById('permValue').value.trim();
+            const role = document.getElementById('permRole').value;
+            
+            // Validaciones...
+            
+            showLoading('Otorgando permiso...');
+            
+            try {
+                const response = await fetch('/api/permissions', {  // ¡Ya está correcto!
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        file_id: fileId,
+                        type: type,
+                        value: value,
+                        role: role
+                    })
+                });
+                // ... resto del código igual ...
+            } catch (error) {
+                showToast('Error al otorgar permiso: ' + error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+    // Función para eliminar permiso desde el botón de basura en la tabla
+        async function deletePermissionById(permissionId) {
+            let fileId = currentFileId;
+            
+            if (!fileId) {
+                showToast('Primero busca un archivo para obtener su ID', 'error');
+                return;
+            }
+            
+            if (!permissionId) {
+                showToast('ID de permiso no válido', 'error');
+                return;
+            }
+            
+            // Confirmar eliminación
+            if (!confirm('¿Estás seguro de que deseas eliminar este permiso?')) {
+                return;
+            }
+            
+            showLoading('Eliminando permiso...');
+            
+            try {
+                let url = `/api/permissions/${fileId}/${permissionId}`;
+                
+                console.log(`🗑️ Eliminando permiso ID: ${permissionId} del archivo: ${fileId}`);
+                console.log(`🌐 URL: ${url}`);
+                
+                const response = await fetch(url, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('✅ Permiso eliminado correctamente', 'success');
+                    
+                    // Actualizar la lista de permisos inmediatamente
+                    // Opción 1: Volver a cargar todos los permisos
+                    await getPermissions();
+                    
+                    // Opción 2: Eliminar solo la fila visualmente (más rápido)
+                    // document.querySelector(`button[onclick*="${permissionId}"]`).closest('tr').remove();
+                    // Actualizar contador
+                    // const count = document.querySelectorAll('#permissionsList tr').length;
+                    // document.getElementById('permissionsCount').textContent = `${count} permisos`;
+                    
+                } else {
+                    showToast('Error: ' + (data.error || 'Error desconocido'), 'error');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error al eliminar permiso:', error);
+                showToast('Error al eliminar permiso: ' + error.message, 'error');
+                
+                // Mensaje específico para errores de conexión
+                if (error.message.includes('Failed to fetch')) {
+                    showToast('Error de conexión. Verifica que el servidor esté activo.', 'error');
+                }
+                
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Función para eliminar permiso desde el FORMULARIO
+        async function deletePermission() {
+            // Verificar que hay un archivo seleccionado
+            if (!currentFileId) {
+                showToast('⚠️ Primero busca un archivo para obtener su ID', 'warning');
+                return;
+            }
+            
+            const deleteType = document.getElementById('deleteType').value;
+            const deleteValue = document.getElementById('deleteValue').value.trim();
+            
+            // Validar entrada
+            if (!deleteValue) {
+                if (deleteType === 'email') {
+                    showToast('✋ Por favor ingresa un email', 'warning');
+                } else {
+                    showToast('✋ Por favor ingresa un ID de permiso', 'warning');
+                }
+                return;
+            }
+            
+            // Confirmar eliminación
+            let confirmMessage = deleteType === 'email' 
+                ? `¿Estás seguro de eliminar el permiso para "${deleteValue}"?`
+                : `¿Estás seguro de eliminar el permiso con ID "${deleteValue.substring(0, 8)}..."?`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            showLoading('🗑️ Eliminando permiso...');
+            
+            try {
+                let url, body;
+                
+                if (deleteType === 'email') {
+                    // Eliminar por EMAIL
+                    url = `/api/permissions/${currentFileId}/email`;
+                    body = JSON.stringify({ 
+                        email: deleteValue,
+                        file_id: currentFileId 
+                    });
+                } else {
+                    // Eliminar por ID del permiso (igual que la tabla)
+                    url = `/api/permissions/${currentFileId}/${deleteValue}`;
+                    body = null;
+                }
+                
+                console.log(`📡 Enviando solicitud DELETE a: ${url}`);
+                console.log(`📦 Datos:`, body);
+                
+                const response = await fetch(url, {
+                    method: 'DELETE',
+                    headers: body ? { 
+                        'Content-Type': 'application/json' 
+                    } : {},
+                    body: body
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || `Error HTTP ${response.status}`);
+                }
+                
+                if (data.success) {
+                    showToast('✅ Permiso eliminado correctamente', 'success');
+                    // Limpiar campo
+                    document.getElementById('deleteValue').value = '';
+                    
+                    // Recargar la lista de permisos automáticamente
+                    setTimeout(() => {
+                        getPermissions();
+                    }, 500);
+                    
+                } else {
+                    showToast(`❌ Error: ${data.error || 'Error desconocido'}`, 'error');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error al eliminar permiso:', error);
+                
+                // Mensajes específicos según el error
+                if (error.message.includes('Failed to fetch')) {
+                    showToast('🌐 Error de conexión. Verifica que el servidor esté activo.', 'error');
+                } else if (error.message.includes('404')) {
+                    showToast('🔍 No se encontró el permiso. Verifica el email o ID.', 'warning');
+                } else {
+                    showToast(`❌ Error: ${error.message}`, 'error');
+                }
+                
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Función para cambiar el placeholder según el tipo de eliminación
+        function toggleDeleteInput() {
+            const deleteType = document.getElementById('deleteType').value;
+            const deleteValueInput = document.getElementById('deleteValue');
+            const deleteLabel = document.getElementById('deleteLabel');
+            
+            if (deleteType === 'email') {
+                deleteLabel.textContent = 'Email del usuario';
+                deleteValueInput.placeholder = 'usuario@gmail.com';
+            } else {
+                deleteLabel.textContent = 'ID del Permiso';
+                deleteValueInput.placeholder = '15497558...';
+            }
+        }
+    
+        // Cargar tema guardado
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-bs-theme', savedTheme);
+            
+            const icon = document.querySelector('[onclick="toggleTheme()"] i');
+            icon.className = savedTheme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+        }
+        
+        // Inicializar al cargar
+        window.addEventListener('load', function() {
+            loadTheme();
+            checkConnection();  // Ahora apunta a /api/status
+            
+            // Verificar si hay ID en la URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const fileIdFromUrl = urlParams.get('file');
+            if (fileIdFromUrl) {
+                document.getElementById('fileId').value = fileIdFromUrl;
+                document.getElementById('grantFileId').value = fileIdFromUrl;
+            }
+        });
+
+
+
+
+    </script>
+</body>
+</html>
