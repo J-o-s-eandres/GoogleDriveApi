@@ -1,0 +1,16 @@
+client_config_backend: settings
+client_config:
+  client_id: YOUR-CLIENT-ID.apps.googleusercontent.com
+  client_secret: YOUR-CLIENT-SECRET
+
+save_credentials: true
+save_credentials_backend: file
+save_credentials_file: credentials_module.json
+# Request an offline refresh token so the Access Token can be refreshed
+get_refresh_token: true
+access_type: offline
+
+oauth_scope:
+  - https://www.googleapis.com/auth/drive
+  - https://www.googleapis.com/auth/drive.file
+  - https://www.googleapis.com/auth/drive.metadata
