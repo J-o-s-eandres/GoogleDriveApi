@@ -78,7 +78,7 @@ google-drive-manager/
 ### Paso 1: Clonar el repositorio
 
 ```bash
-git clone https://github.com/tuusuario/google-drive-manager.git
+git clone https://github.com/J-o-s-eandres/GoogleDriveApi.git
 cd google-drive-manager
 ```
 
