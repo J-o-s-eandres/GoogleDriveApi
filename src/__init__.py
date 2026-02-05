@@ -12,7 +12,7 @@ def create_app():
     # Obtener directorio base
     base_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
     
-    # Configurar Flask como lo hacías antes
+    # Configurar Flask
     app = Flask(__name__,
                 static_url_path='/static',
                 static_folder=os.path.join(base_dir, 'static'),
@@ -31,3 +31,4 @@ def create_app():
     app.register_blueprint(permissions_bp)
     
     return app
+
