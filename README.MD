@@ -364,7 +364,7 @@ Distribuido bajo la licencia MIT. Ver `LICENSE` para más información.
 
 ## 📞 Soporte
 
-Para soporte, abre un issue en el repositorio o contacta a [tu-email@ejemplo.com](mailto:Joseandresmontesino@gmail.com)
+Para soporte, abre un issue en el repositorio o contacta a [Joseandres Montesino ](mailto:Joseandresmontesino@gmail.com)
 
 ---
 
