@@ -404,7 +404,7 @@
                 
                 const statusEl = document.getElementById('connectionStatus');
                 
-                if (data.credentials_exist) {
+                if (data.credentials_valid) {
                     statusEl.innerHTML = '<span class="status-indicator status-online"></span> Conectado';
                     statusEl.className = 'small';
                 } else {
