@@ -773,16 +773,6 @@ graph TD
     H --> I[Ejecutar python app.py]
     I --> J[API lista en localhost:5000]
 ```
-
-## 🎯 Próximas Características
-
-- [ ] Interfaz web administrativa
-- [ ] Panel de estadísticas
-- [ ] Logs persistentes
-- [ ] Sistema de plantillas de permisos
-- [ ] Integración con webhooks
-- [ ] Documentación Swagger/OpenAPI
-
 ---
 
 *Última actualización: Febrero 2026*
