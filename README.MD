@@ -1,9 +1,5 @@
 # 🚀 Google Drive Permissions Manager API
 
-![Flask](https://img.shields.io/badge/Flask-2.3.3-000000?style=for-the-badge&logo=flask)
-![Google Drive API](https://img.shields.io/badge/Google%20Drive%20API-4285F4?style=for-the-badge&logo=google-drive&logoColor=white)
-![Python](https://img.shields.io/badge/Python-3.8%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)
-
 Una API RESTful construida con Flask para gestionar permisos de archivos en Google Drive de manera programática. Perfecta para automatizar la administración de accesos y permisos en tu Google Drive.
 
 ## 📋 Características Principales
@@ -42,7 +38,7 @@ Una API RESTful construida con Flask para gestionar permisos de archivos en Goog
 - ✅ **CORS configurado** - Listo para integración frontend
 - ✅ **Logging detallado** - Facilita debugging y monitoreo
 
-```
+
 GoogleDriveAPI/
 ├── app.py                    # Entry point de Flask
 ├── requirements.txt          # Dependencias Python
@@ -54,7 +50,7 @@ GoogleDriveAPI/
 ├── src/                     # Código fuente modular
 ├── static/                  # Archivos estáticos
 └── templates/               # Templates HTML
-```
+
 
 ## 🚀 Instalación Rápida
 
