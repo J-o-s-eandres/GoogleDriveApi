@@ -42,29 +42,18 @@ Una API RESTful construida con Flask para gestionar permisos de archivos en Goog
 - ✅ **CORS configurado** - Listo para integración frontend
 - ✅ **Logging detallado** - Facilita debugging y monitoreo
 
-## 🏗️ Arquitectura del Proyecto
-
 ```
-google-drive-manager/
-├── app.py                    # Punto de entrada principal
-├── requirements.txt          # Dependencias de Python
-├── settings.yaml            # Configuración de Google OAuth
-├── .env                     # Variables de entorno
-├── client_secrets.json      # Credenciales de Google Cloud
-├── credentials_module.json  # Tokens de acceso (generado)
-│
+GoogleDriveAPI/
+├── app.py                    # Entry point de Flask
+├── requirements.txt          # Dependencias Python
+├── settings.yaml            # Config OAuth de Google
+├── QuickStart.py            # Script de autenticación
+├── .gitignore               # Archivos ignorados
+├── LICENSE                  # Licencia MIT
+├── README.md                # Documentación
 ├── src/                     # Código fuente modular
-│   ├── routes/             # Blueprints de rutas
-│   ├── services/           # Lógica de negocio
-│   └── utils/              # Utilidades compartidas
-│
 ├── static/                  # Archivos estáticos
-│   └── css/
-│
-├── templates/               # Templates HTML
-│   └── index.html
-│
-└── QuickStart.py           # Script de configuración inicial
+└── templates/               # Templates HTML
 ```
 
 ## 🚀 Instalación Rápida
